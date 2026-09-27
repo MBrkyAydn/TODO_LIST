@@ -4,7 +4,7 @@ package com.berkay.todo.service;
 import com.berkay.todo.dto.request.TaskRequest;
 import com.berkay.todo.dto.response.TaskResponse;
 import com.berkay.todo.entity.Task;
-import com.berkay.todo.exception.AllReadyExistException;
+import com.berkay.todo.exception.AlreadyExistsException;
 import com.berkay.todo.exception.TaskNotFoundException;
 import com.berkay.todo.mapper.TaskMapper;
 import com.berkay.todo.repository.TaskRepository;
@@ -23,7 +23,7 @@ public class TaskService {
 
     public TaskResponse createTask(TaskRequest taskRequest) {
         if (taskRepository.existsByTitle(taskRequest.getTitle())) {
-            throw new AllReadyExistException("Bu başlığa sahip bir görev zaten mevcut: " + taskRequest.getTitle());
+            throw new AlreadyExistsException("Bu başlığa sahip bir görev zaten mevcut: " + taskRequest.getTitle());
         }
         Task task = taskMapper.toEntity(taskRequest);
         Task savedTask = taskRepository.save(task);
@@ -36,7 +36,7 @@ public class TaskService {
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
 
         if (taskRepository.existsByTitleAndIdNot(taskRequest.getTitle(), id)) {
-            throw new AllReadyExistException("Bu başlığa sahip bir görev zaten mevcut: " + taskRequest.getTitle());
+            throw new AlreadyExistsException("Bu başlığa sahip bir görev zaten mevcut: " + taskRequest.getTitle());
         }
 
         task.setTitle(taskRequest.getTitle());
@@ -71,10 +71,8 @@ public class TaskService {
     }
 
     public TaskResponse findTaskByTitle(String title) {
-        Task task = taskRepository.findTaskByTitleIs(title);
-        if (task == null) {
-            throw new TaskNotFoundException("Belirtilen başlığa sahip görev bulunamadı: " + title);
-        }
+        Task task = taskRepository.findByTitle(title)
+                .orElseThrow(() -> new TaskNotFoundException("Belirtilen başlığa sahip görev bulunamadı: " + title));
         return taskMapper.toResponse(task);
 
     }
