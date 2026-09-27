@@ -14,14 +14,14 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TaskRequest {
 
-    @NotBlank
+    @NotBlank(message = "Başlık boş bırakılamaz")
     private String title;
 
 
-    @NotBlank
+    @NotBlank(message = "Açıklama boş bırakılamaz")
     private String description;
 
-    @NotNull
+    @NotNull(message = "Tamamlandı bilgisi boş bırakılamaz")
     private Boolean completed;
 
 

@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TaskStatusRequest {
-    @NotNull(message = "Completed alanı boş bırakılamaz")
+    @NotNull(message = "Tamamlandı bilgisi boş bırakılamaz")
     private Boolean completed;
 
 

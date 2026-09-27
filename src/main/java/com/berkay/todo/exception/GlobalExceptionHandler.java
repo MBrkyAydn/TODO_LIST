@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.NOT_FOUND.value());
-        response.put("error", "Not Found");
+        response.put("error", "Kayıt Bulunamadı");
         response.put("message", ex.getMessage());
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Validation Error");
+        response.put("error", "Doğrulama Hatası");
         response.put("details", validationErrors);
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -49,19 +49,21 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Internal Server Error");
-        response.put("message", ex.getMessage());
+        response.put("error", "Sunucu Hatası");
+        response.put("message", "Beklenmeyen bir hata oluştu: " + ex.getMessage());
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    // 4. Kayıt zaten mevcut olduğunda (400 Bad Request)
     @ExceptionHandler(AllReadyExistException.class)
     public ResponseEntity<Map<String, Object>> handleAllReadyExistException(AllReadyExistException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Bad Request");
+        response.put("error", "Kayıt Zaten Mevcut");
         response.put("message", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }
