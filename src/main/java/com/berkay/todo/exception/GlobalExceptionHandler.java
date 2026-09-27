@@ -55,15 +55,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 4. Kayıt zaten mevcut olduğunda (400 Bad Request)
-    @ExceptionHandler(AllReadyExistException.class)
-    public ResponseEntity<Map<String, Object>> handleAllReadyExistException(AllReadyExistException ex) {
+    // 4. Kayıt zaten mevcut olduğunda (409 Conflict)
+    @ExceptionHandler(AlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleAlreadyExistsException(AlreadyExistsException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("status", HttpStatus.CONFLICT.value());
         response.put("error", "Kayıt Zaten Mevcut");
         response.put("message", ex.getMessage());
 
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 }
