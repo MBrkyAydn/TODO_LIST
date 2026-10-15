@@ -1,5 +1,6 @@
 package com.berkay.todo.controller;
 
+import com.berkay.todo.dto.request.LoginRequest;
 import com.berkay.todo.dto.request.RegisterRequest;
 import com.berkay.todo.dto.response.UserResponse;
 import com.berkay.todo.service.UserService;
@@ -17,7 +18,12 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse register(@Valid @RequestBody RegisterRequest registerRequest) {
-      return    userService.register(registerRequest);
+        return userService.register(registerRequest);
     }
+@PostMapping("/login")
+    public void login(@Valid @RequestBody LoginRequest loginRequest) {
+        userService.login(loginRequest);
+
+}
 
 }

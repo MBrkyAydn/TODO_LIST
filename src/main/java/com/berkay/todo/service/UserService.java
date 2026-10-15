@@ -1,5 +1,6 @@
 package com.berkay.todo.service;
 
+import com.berkay.todo.dto.request.LoginRequest;
 import com.berkay.todo.dto.request.RegisterRequest;
 import com.berkay.todo.dto.response.UserResponse;
 
@@ -8,6 +9,8 @@ import com.berkay.todo.mapper.UserMapper;
 import com.berkay.todo.repository.UserRepository;
 import com.berkay.todo.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,18 +19,32 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private  final UserMapper userMapper;
+    private final UserMapper userMapper;
+    private final AuthenticationManager authenticationManager;
 
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new AlreadyExistsException("Bu email adresi zaten kayıtlı");
         }
         String encodedPassword = passwordEncoder.encode(registerRequest.getPassword());
-        User user =userMapper.toEntity(registerRequest);
+        User user = userMapper.toEntity(registerRequest);
 
         user.setPassword(encodedPassword);
         User savedUser = userRepository.save(user);
         return userMapper.toResponse(savedUser);
     }
 
+    public void login(LoginRequest loginRequest) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+
+                )
+        );
+
+
+    }
+
+    
 }

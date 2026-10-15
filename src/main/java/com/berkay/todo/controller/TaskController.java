@@ -23,12 +23,10 @@ public class TaskController {
         return taskService.createTask(taskRequest);
 
     }
-
-    @GetMapping
-    public List<TaskResponse> getAllTasks() {
+ @GetMapping
+ public List<TaskResponse> getTasks(@Valid @RequestBody TaskRequest taskRequest) {
         return taskService.findAllTasks();
-    }
-
+ }
     @GetMapping("/{id}")
     public TaskResponse getTaskById(@PathVariable Long id) {
         return taskService.findTaskById(id);

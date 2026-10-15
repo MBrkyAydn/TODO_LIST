@@ -1,15 +1,45 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:16-alpine'
     container_name: todo-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-todo}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-8552}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - '5436:5432'
+    networks:
+      - todoag
+
+
     volumes:
       - todo_postgres_data:/var/lib/postgresql/data
+
+  todo-app:
+    build: .
+    image: "todoimage"
+    container_name: todocontainer
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=dev
+    depends_on:
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+
+    networks:
+      - todoag
+
+
+networks:
+  todoag:
+    driver: bridge
 
 volumes:
   todo_postgres_data:
