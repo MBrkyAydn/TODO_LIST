@@ -1,4 +1,5 @@
 HELP.md
+.env
 .serena
 graphify-out
 target/
