@@ -1,5 +1,6 @@
 package com.berkay.todo.security;
 
+import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -32,6 +33,15 @@ public class JwtService {
                 .signWith(secretKey)
                 .compact();
 
+
+    }
+    public String extrctEmail(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
 
     }
 
