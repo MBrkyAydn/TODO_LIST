@@ -4,12 +4,15 @@ package com.berkay.todo.service;
 import com.berkay.todo.dto.request.TaskRequest;
 import com.berkay.todo.dto.response.TaskResponse;
 import com.berkay.todo.entity.Task;
+import com.berkay.todo.entity.User;
 import com.berkay.todo.exception.AlreadyExistsException;
 import com.berkay.todo.exception.TaskNotFoundException;
 import com.berkay.todo.mapper.TaskMapper;
 import com.berkay.todo.repository.TaskRepository;
 
+import com.berkay.todo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,18 +23,26 @@ import java.util.List;
 public class TaskService {
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
+
 
     public TaskResponse createTask(TaskRequest taskRequest) {
         if (taskRepository.existsByTitle(taskRequest.getTitle())) {
             throw new AlreadyExistsException("Bu başlığa sahip bir görev zaten mevcut: " + taskRequest.getTitle());
         }
         Task task = taskMapper.toEntity(taskRequest);
+        User user = getCurrentUser();
+        task.setUser(user);
+
         Task savedTask = taskRepository.save(task);
         return taskMapper.toResponse(savedTask);
+
 
     }
 
     public TaskResponse updateTask(TaskRequest taskRequest, Long id) {
+        User user = getCurrentUser();
+
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
 
@@ -47,7 +58,9 @@ public class TaskService {
     }
 
     public void deleteTask(Long id) {
-        Task task = taskRepository.findById(id)
+
+        User user = getCurrentUser();
+        Task task = taskRepository.findByIdAndUser_Id(id, user.getId())
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
         taskRepository.delete(task);
 
@@ -55,6 +68,7 @@ public class TaskService {
     }
 
     public List<TaskResponse> findAllTasks() {
+        User user = getCurrentUser();
         return taskRepository.findAll()
                 .stream()
                 .map(taskMapper::toResponse)
@@ -63,6 +77,7 @@ public class TaskService {
     }
 
     public TaskResponse findTaskById(Long id) {
+        User user = getCurrentUser();
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
 
@@ -71,6 +86,7 @@ public class TaskService {
     }
 
     public TaskResponse findTaskByTitle(String title) {
+        User user = getCurrentUser();
         Task task = taskRepository.findByTitle(title)
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen başlığa sahip görev bulunamadı: " + title));
         return taskMapper.toResponse(task);
@@ -78,6 +94,8 @@ public class TaskService {
     }
 
     public TaskResponse updateCompleted(Long id, Boolean completed) {
+        User user = getCurrentUser();
+
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
         task.setCompleted(completed);
@@ -86,6 +104,13 @@ public class TaskService {
 
     }
 
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
 
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+    }
 }
 

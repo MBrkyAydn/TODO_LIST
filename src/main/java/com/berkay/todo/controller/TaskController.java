@@ -24,7 +24,7 @@ public class TaskController {
 
     }
  @GetMapping
- public List<TaskResponse> getTasks(@Valid @RequestBody TaskRequest taskRequest) {
+ public List<TaskResponse> getTasks() {
         return taskService.findAllTasks();
  }
     @GetMapping("/{id}")
