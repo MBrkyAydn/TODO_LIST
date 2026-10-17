@@ -13,12 +13,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     Optional<Task> findByTitle(String title);
 
+    List<Task> findAllByUser_Id(Long userId);
 
     boolean existsByTitle(String title);
 
     boolean existsByTitleAndIdNot(String title, Long id);
-List<Task> findByUser_Id(Long id);
+
+    List<Task> findByUser_Id(Long id);
 
     Optional<Task> findByIdAndUser_Id(Long id, Long userId);
 
+    Optional<Task> findByTitleAndUser_Id(String title, Long userId);
 }

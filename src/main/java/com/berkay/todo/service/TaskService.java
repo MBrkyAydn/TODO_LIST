@@ -43,7 +43,7 @@ public class TaskService {
     public TaskResponse updateTask(TaskRequest taskRequest, Long id) {
         User user = getCurrentUser();
 
-        Task task = taskRepository.findById(id)
+        Task task = taskRepository.findByIdAndUser_Id(id, user.getId())
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
 
         if (taskRepository.existsByTitleAndIdNot(taskRequest.getTitle(), id)) {
@@ -69,7 +69,9 @@ public class TaskService {
 
     public List<TaskResponse> findAllTasks() {
         User user = getCurrentUser();
-        return taskRepository.findAll()
+
+        return taskRepository.findAllByUser_Id(user.getId())
+
                 .stream()
                 .map(taskMapper::toResponse)
                 .toList();
@@ -78,8 +80,8 @@ public class TaskService {
 
     public TaskResponse findTaskById(Long id) {
         User user = getCurrentUser();
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
+        Task task = taskRepository.findByIdAndUser_Id(id, user.getId())
+                .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: "+ id));
 
         return taskMapper.toResponse(task);
 
@@ -87,7 +89,7 @@ public class TaskService {
 
     public TaskResponse findTaskByTitle(String title) {
         User user = getCurrentUser();
-        Task task = taskRepository.findByTitle(title)
+        Task task = taskRepository.findByTitleAndUser_Id(title, user.getId())
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen başlığa sahip görev bulunamadı: " + title));
         return taskMapper.toResponse(task);
 
@@ -112,5 +114,8 @@ public class TaskService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
     }
+
+
+
 }
 

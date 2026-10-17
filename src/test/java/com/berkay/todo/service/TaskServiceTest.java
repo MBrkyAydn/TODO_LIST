@@ -5,6 +5,7 @@ import com.berkay.todo.dto.response.TaskResponse;
 import com.berkay.todo.entity.Task;
 import com.berkay.todo.entity.User;
 import com.berkay.todo.exception.AlreadyExistsException;
+import com.berkay.todo.exception.TaskNotFoundException;
 import com.berkay.todo.mapper.TaskMapper;
 import com.berkay.todo.repository.TaskRepository;
 import com.berkay.todo.repository.UserRepository;
@@ -17,6 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -174,7 +178,7 @@ public class TaskServiceTest {
         );
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.of(task));
         when(taskRepository.existsByTitleAndIdNot(request.getTitle(), taskId)).thenReturn(false);
         when(taskRepository.save(any(Task.class))).thenAnswer(i -> i.getArgument(0));
         when(taskMapper.toResponse(any(Task.class))).thenReturn(response);
@@ -192,4 +196,276 @@ public class TaskServiceTest {
         verify(taskRepository, times(1)).save(any(Task.class));
         verify(taskMapper).toResponse(any(Task.class));
     }
+
+    @Test
+    void updateTask_shouldThrowExceptionWhenTaskNotFound() {
+
+        Long taskId = 10L;
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+        TaskRequest request = new TaskRequest();
+        request.setTitle("update");
+        request.setCompleted(true);
+        request.setDescription("UPDATED");
+        SecurityContextHolder.getContext().setAuthentication(
+                new
+                        UsernamePasswordAuthenticationToken("test@example.com", null, java.util.Collections.emptyList())
+        );
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.empty());
+
+        assertThrows(TaskNotFoundException.class, () -> taskService.updateTask(request, taskId));
+
+
+        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskMapper, never()).toResponse(any(Task.class));
+
+
+    }
+
+    @Test
+    void updateTask_shouldThrowExceptionWhenTitleAlreadyExists() {
+        Long taskId = 10L;
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+
+        Task task = new Task();
+        task.setId(taskId);
+        task.setUser(user);
+
+        TaskRequest request = new TaskRequest();
+        request.setTitle("mevcut");
+        request.setCompleted(false);
+        request.setDescription("yeni");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null, java.util.Collections.emptyList()));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.of(task));
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(taskRepository.existsByTitleAndIdNot(request.getTitle(), taskId)).thenReturn(true);
+        assertThrows(AlreadyExistsException.class, () -> taskService.updateTask(request, taskId));
+
+        verify(taskRepository, never()).save(any(Task.class));
+
+
+    }
+
+    @Test
+    void deleteTask_shouldDeleteTaskSuccessfully() {
+        Long taskId = 10L;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+
+
+        Task task = new Task();
+        task.setId(taskId);
+        task.setUser(user);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null, java.util.Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.of(task));
+        taskService.deleteTask(taskId);
+
+        verify(taskRepository, times(1)).delete(task);
+
+
+    }
+
+    @Test
+    void deleteTask_shouldThrowExceptionWhenTaskNotFound() {
+        Long taskId = 10L;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("1@gmail.com");
+
+        Task task = new Task();
+        task.setId(taskId);
+        task.setUser(user);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1@gmail.com", null, java.util.Collections.emptyList())
+        );
+
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+        assertThrows(TaskNotFoundException.class, () -> taskService.deleteTask(taskId));
+        verify(taskRepository, never()).delete(any(Task.class));
+    }
+
+    @Test
+    void findTaskById_shouldReturnTaskWhenFound() {
+        Long taskId = 10L;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("1@gmail.com");
+
+
+        Task task = new Task();
+        task.setId(taskId);
+
+        task.setCompleted(false);
+        task.setDescription("açıklama");
+        task.setTitle("test");
+        task.setUser(user);
+
+        TaskResponse response = new TaskResponse();
+
+        response.setId(taskId);
+        response.setTitle("test");
+        response.setCompleted(false);
+        response.setDescription("açıklama");
+
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1@gmail.com", null, java.util.Collections.emptyList())
+        );
+
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.of(task));
+        when(taskMapper.toResponse(task)).thenReturn(response);
+        when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+
+        TaskResponse result = taskService.findTaskById(taskId);
+        assertNotNull(result);
+        assertEquals(taskId, result.getId());
+        assertEquals("test", result.getTitle());
+
+        verify(taskRepository, times(1)).findByIdAndUser_Id(taskId, user.getId());
+        verify(taskMapper, times(1)).toResponse(task);
+
+    }
+
+    @Test
+    void findTaskById_shouldThrowExceptionWhenTaskNotFound() {
+        Long taskId = 12123L;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("1@gmail.com");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "1@gmail.com", null, java.util.Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.empty());
+
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class, () -> taskService.findTaskById(taskId));
+
+        assertEquals("Belirtilen ID numarasına sahip görev bulunamadı: " + taskId, exception.getMessage()
+        );
+
+        verify(taskRepository, times(1)).findByIdAndUser_Id(taskId, user.getId());
+        verify(taskMapper, never()).toResponse(any(Task.class));
+
+    }
+
+    @Test
+    void findTaskByTitle_shouldThrowExceptionTaskNotWhenFound() {
+
+        String title = "no";
+
+        User user = new User();
+
+        user.setId(1L);
+        user.setEmail("1@gmail.com");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1@gmail.com", null, java.util.Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByTitleAndUser_Id(title, user.getId())).thenReturn(Optional.empty());
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class, () -> taskService.findTaskByTitle(title));
+
+        assertEquals("Belirtilen başlığa sahip görev bulunamadı: " + title, exception.getMessage());
+        verify(taskRepository, times(1)).findByTitleAndUser_Id(title, user.getId());
+        verify(taskMapper, never()).toResponse(any(Task.class));
+
+    }
+
+    @Test
+    void findAllTasks_shouldReturnTasksOfCurrentUser() {
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("1@gmail.com");
+
+        Task task = new Task();
+        task.setId(10L);
+        task.setTitle("test");
+        task.setUser(user);
+
+        Task task2 = new Task();
+        task2.setId(20L);
+        task2.setTitle("test2");
+        task2.setUser(user);
+
+
+        TaskResponse response = new TaskResponse();
+        response.setId(10L);
+        response.setTitle("test");
+        TaskResponse response2 = new TaskResponse();
+        response2.setId(20L);
+        response2.setTitle("test2");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "1@gmail.com", null, java.util.Collections.emptyList()
+                )
+        );
+        when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findAllByUser_Id(user.getId())).thenReturn(Arrays.asList(task, task2));
+        when(taskMapper.toResponse(task)).thenReturn(response);
+        when(taskMapper.toResponse(task2)).thenReturn(response2);
+
+        List<TaskResponse> result = taskService.findAllTasks();
+
+        assertEquals(2, result.size());
+        assertEquals("test", result.get(0).getTitle());
+        assertEquals("test2", result.get(1).getTitle());
+        verify(taskMapper, times(1)).toResponse(task);
+        verify(taskMapper, times(1)).toResponse(task2);
+
+
+    }
+
+
+
+    @Test
+    void findAllTasks_shouldReturnEmptyListWhenUserHasNoTasks()
+    {
+User user = new User();
+    user.setId(1L);
+    user.setEmail("1@gmail.com");
+
+
+SecurityContextHolder.getContext().setAuthentication(
+        new UsernamePasswordAuthenticationToken("1@gmail.com", null, java.util.Collections.emptyList())
+
+);
+when(userRepository.findByEmail("1@gmail.com")).thenReturn(Optional.of(user));
+when(taskRepository.findAllByUser_Id(user.getId())).thenReturn(List.of());
+
+List<TaskResponse> result = taskService.findAllTasks();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(taskRepository, times(1))
+                .findAllByUser_Id(user.getId());
+
+        // Görev olmadığı için mapper hiç çağrılmamalı
+        verifyNoInteractions(taskMapper);
+
+    }
+
 }
