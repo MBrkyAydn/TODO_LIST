@@ -98,7 +98,7 @@ public class TaskService {
     public TaskResponse updateCompleted(Long id, Boolean completed) {
         User user = getCurrentUser();
 
-        Task task = taskRepository.findById(id)
+        Task task = taskRepository.findByIdAndUser_Id(id, user.getId())
                 .orElseThrow(() -> new TaskNotFoundException("Belirtilen ID numarasına sahip görev bulunamadı: " + id));
         task.setCompleted(completed);
         Task updatedTask = taskRepository.save(task);

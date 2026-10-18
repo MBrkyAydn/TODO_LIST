@@ -468,4 +468,96 @@ List<TaskResponse> result = taskService.findAllTasks();
 
     }
 
+    @Test
+    void updateCompleted_shouldUpdateCompletedStatusSuccessfully() {
+        Long taskId = 10L;
+        Boolean newCompletedStatus = true;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+
+        Task task = new Task();
+        task.setId(taskId);
+        task.setTitle("Test Görevi");
+        task.setDescription("Test Açıklama");
+        task.setCompleted(false);
+        task.setUser(user);
+
+        TaskResponse response = new TaskResponse();
+        response.setId(taskId);
+        response.setTitle("Test Görevi");
+        response.setDescription("Test Açıklama");
+        response.setCompleted(newCompletedStatus);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null, Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.of(task));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskMapper.toResponse(any(Task.class))).thenReturn(response);
+
+        // Act
+        TaskResponse result = taskService.updateCompleted(taskId, newCompletedStatus);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(taskId, result.getId());
+        assertTrue(result.getCompleted());
+        assertTrue(task.getCompleted());
+
+        verify(taskRepository, times(1)).findByIdAndUser_Id(taskId, user.getId());
+        verify(taskRepository, times(1)).save(task);
+        verify(taskMapper, times(1)).toResponse(task);
+    }
+
+    @Test
+    void updateCompleted_shouldThrowExceptionWhenTaskNotFound() {
+        Long taskId = 99L;
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null, Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(taskRepository.findByIdAndUser_Id(taskId, user.getId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        TaskNotFoundException exception = assertThrows(TaskNotFoundException.class,
+                () -> taskService.updateCompleted(taskId, true));
+
+        assertEquals("Belirtilen ID numarasına sahip görev bulunamadı: " + taskId, exception.getMessage());
+
+        verify(taskRepository, times(1)).findByIdAndUser_Id(taskId, user.getId());
+        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskMapper, never()).toResponse(any(Task.class));
+    }
+
+    @Test
+    void updateCompleted_shouldThrowExceptionWhenCurrentUserNotFound() {
+        Long taskId = 10L;
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("test@example.com", null, Collections.emptyList())
+        );
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> taskService.updateCompleted(taskId, true));
+
+        assertEquals("Kullanıcı bulunamadı", exception.getMessage());
+
+        verify(taskRepository, never()).findByIdAndUser_Id(anyLong(), anyLong());
+        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskMapper, never()).toResponse(any(Task.class));
+    }
+
 }
