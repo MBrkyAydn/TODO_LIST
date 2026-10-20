@@ -11,7 +11,6 @@ import java.util.Optional;
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
 
-    Optional<Task> findByTitle(String title);
 
     List<Task> findAllByUser_Id(Long userId);
 
@@ -19,7 +18,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     boolean existsByTitleAndIdNot(String title, Long id);
 
-    List<Task> findByUser_Id(Long id);
 
     Optional<Task> findByIdAndUser_Id(Long id, Long userId);
 
